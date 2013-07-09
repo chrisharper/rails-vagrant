@@ -57,7 +57,17 @@ config/deploy/staging.rb
   server 'APP_URL', :app, :web, :db, :primary => true
 </code></pre>
 
+Then setup the folders and deploy with 
+
 <code><pre>
   bundle exec cap staging deploy:setup
   bundle exec cap staging deploy
 </pre></code>
+
+
+Notes
+=====
+
+There are no backups setup.
+There is no process monitor/watcher (bluepill etc)
+
