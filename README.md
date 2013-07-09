@@ -8,7 +8,7 @@ It assumes the following :
 + Postgresql
 + Ruby 2.0.0
 + Rbenv
-
++ unicorn
 
 Installation
 ============
@@ -52,18 +52,52 @@ after "deploy:restart", "deploy:cleanup"
 </code></pre>
 
 config/deploy/staging.rb
-<code><pre>
+<pre><code>
   set :rails_env , 'staging'
   server 'APP_URL', :app, :web, :db, :primary => true
 </code></pre>
 
 Then setup the folders and deploy with 
 
-<code><pre>
+<pre><code>
   bundle exec cap staging deploy:setup
   bundle exec cap staging deploy
-</pre></code>
+</code></pre>
 
+
+Unicorn
+=======
+
+config/unicorn.rb
+<pre><code>
+  worker_processes 4
+  timeout 15
+  preload_app true
+
+  listen "/var/www/APP_NAME/current/tmp/unicorn.sock", :backlog => 64
+  pid "/var/www/APP_NAME/current/tmp/pids/unicorn.pid"
+  stderr_path "/var/www/APP_NAME/current/log/unicorn.stderr.log"
+  stdout_path "/var/www/APP_NAME/current/log/unicorn.stdout.log"
+
+  before_fork do |server, worker|
+    Signal.trap 'TERM' do
+    puts 'Unicorn master intercepting TERM and sending myself QUIT instead'
+    Process.kill 'QUIT', Process.pid
+  end
+
+  defined?(ActiveRecord::Base) and
+    ActiveRecord::Base.connection.disconnect!
+  end
+
+  after_fork do |server, worker|
+    Signal.trap 'TERM' do
+    puts 'Unicorn worker intercepting TERM and doing nothing. Wait for master to send QUIT'
+  end
+
+  defined?(ActiveRecord::Base) and
+    ActiveRecord::Base.establish_connection
+  end
+</code></pre>
 
 Notes
 =====
